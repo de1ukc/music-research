@@ -2,6 +2,8 @@ import os
 import sys
 import glob
 import numpy as np
+import tables
+import matplotlib.pyplot as plt
 
 msd_subset_path = "/Users/de1ukc/git/music-research/msd_dataset/MillionSongSubset"
 # msd_subset_data_path = os.path.join(msd_subset_path, "data")
@@ -41,7 +43,87 @@ def apply_to_all_files(basedir, func=lambda x: x, ext=".h5"):
     return cnt
 
 
+def collect_dataset(basedir, ext=".h5"):
+    beats: list[np.ndarray] = []
+    tempos: list[float] = []
+    segments_pitches_list = []
+    mfccs_list = []
+
+    for root, dirs, files in os.walk(basedir):
+        files = glob.glob(os.path.join(root, "*" + ext))  # count files
+
+        # apply function to all files
+        for f in files:
+            start_beats, tempo, segments_pitches, mfccs = get_data_from_file(h5_file_path=f)
+
+            # plot_tempogram(start_beats)
+            # plot_beatgram(start_beats)
+            # plot_chromagram(segments_pitches=segments_pitches)
+            # ploat_spec(mfccs=mfccs)
+
+            beats.append(start_beats)
+            tempos.append(tempo)
+            segments_pitches_list.append(segments_pitches)
+            mfccs_list.append(mfccs)
+
+    return beats, tempos, segments_pitches_list, mfccs_list
+
+
+def get_data_from_file(h5_file_path):
+    h5 = tables.open_file(h5_file_path, mode='r')
+    tempo = GETTERS.get_tempo(h5)
+    beats_start = GETTERS.get_beats_start(h5)
+    segment_pitches = GETTERS.get_segments_pitches(h5)
+    mfccs = GETTERS.get_segments_timbre(h5)
+
+    return beats_start, tempo, segment_pitches, mfccs
+
+
+def plot_tempogram(beats_start):
+    # Рассчитываем интервалы между ударами (beats)
+    beat_intervals = np.diff(beats_start)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(beats_start[:-1], 60 / beat_intervals, label='Темпограмма')
+    plt.xlabel('Время (секунды)')
+    plt.ylabel('Темп (ударов в минуту)')
+    plt.title('Темпограмма')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+def plot_chromagram(segments_pitches):
+    plt.figure(figsize=(10, 6))
+    plt.imshow(segments_pitches.T, aspect='auto', origin='lower', cmap='magma')
+    plt.xlabel('Сегменты')
+    plt.ylabel('Питч (Хроматические признаки)')
+    plt.title('Хромограмма')
+    plt.colorbar(label='Нормализованные значения')
+    plt.show()
+
+
+def plot_beatgram(beats_start):
+    plt.figure(figsize=(10, 6))
+    plt.vlines(beats_start, ymin=0, ymax=1, color='r', alpha=0.75, label='Биты')
+    plt.xlabel('Время (секунды)')
+    plt.ylabel('Уровень активности')
+    plt.title('Битграмма')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+def ploat_spec(mfccs):
+    # Plotting the MFCCs
+    plt.figure(figsize=(12, 6))
+    plt.imshow(mfccs.T, aspect='auto', origin='lower', cmap='hot')
+    plt.ylabel('MFCC Coefficients')
+    plt.xlabel('Time (in frames)')
+    plt.title('MFCC Visualization')
+    plt.colorbar(format='%+2.0f dB')
+    plt.show()
+
+
+beats, tempos, segments_pitches_list, mfccs_list = collect_dataset(basedir=msd_subset_path)
 print('number of songs', apply_to_all_files(basedir=msd_subset_path))
-
-
-
