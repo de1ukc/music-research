@@ -5,6 +5,8 @@ import numpy as np
 import tables
 import matplotlib.pyplot as plt
 
+N = 1000  # Количество образцов для обучения
+
 msd_subset_path = "/Users/de1ukc/git/music-research/msd_dataset/MillionSongSubset"
 # msd_subset_data_path = os.path.join(msd_subset_path, "data")
 # msd_subset_addf_path = os.path.join(msd_subset_path, "AdditionalFiles")
@@ -75,11 +77,12 @@ def get_data_from_file(h5_file_path):
     beats_start = GETTERS.get_beats_start(h5)
     segment_pitches = GETTERS.get_segments_pitches(h5)
     mfccs = GETTERS.get_segments_timbre(h5)
+    h5.close()
 
     return beats_start, tempo, segment_pitches, mfccs
 
 
-def plot_tempogram(beats_start):
+def plot_tempogram(beats_start, filename):
     # Рассчитываем интервалы между ударами (beats)
     beat_intervals = np.diff(beats_start)
 
@@ -90,20 +93,24 @@ def plot_tempogram(beats_start):
     plt.title('Темпограмма')
     plt.legend()
     plt.grid(True)
-    plt.show()
+    # plt.show()
+    plt.savefig(filename)  # Сохраняем изображение с указанным именем файла
+    plt.close()  # Закрываем текущий график, чтобы не сохранить его в памяти
 
 
-def plot_chromagram(segments_pitches):
+def plot_chromagram(segments_pitches, filename):
     plt.figure(figsize=(10, 6))
     plt.imshow(segments_pitches.T, aspect='auto', origin='lower', cmap='magma')
     plt.xlabel('Сегменты')
     plt.ylabel('Питч (Хроматические признаки)')
     plt.title('Хромограмма')
     plt.colorbar(label='Нормализованные значения')
-    plt.show()
+    # plt.show()
+    plt.savefig(filename)
+    plt.close()
 
 
-def plot_beatgram(beats_start):
+def plot_beatgram(beats_start, filename):
     plt.figure(figsize=(10, 6))
     plt.vlines(beats_start, ymin=0, ymax=1, color='r', alpha=0.75, label='Биты')
     plt.xlabel('Время (секунды)')
@@ -111,10 +118,12 @@ def plot_beatgram(beats_start):
     plt.title('Битграмма')
     plt.legend()
     plt.grid(True)
-    plt.show()
+    # plt.show()
+    plt.savefig(filename)
+    plt.close()
 
 
-def ploat_spec(mfccs):
+def plot_spec(mfccs, filename):
     # Plotting the MFCCs
     plt.figure(figsize=(12, 6))
     plt.imshow(mfccs.T, aspect='auto', origin='lower', cmap='hot')
@@ -122,8 +131,21 @@ def ploat_spec(mfccs):
     plt.xlabel('Time (in frames)')
     plt.title('MFCC Visualization')
     plt.colorbar(format='%+2.0f dB')
-    plt.show()
+    # plt.show()
+    plt.savefig(filename)
+    plt.close()
 
 
-beats, tempos, segments_pitches_list, mfccs_list = collect_dataset(basedir=msd_subset_path)
-print('number of songs', apply_to_all_files(basedir=msd_subset_path))
+# Пример использования функции для сохранения изображений
+def save_images(func, array, filepath, gramm_name):
+    for i in range(0, N - 1):
+        filename = f"{filepath}/{gramm_name}_{i}.png"  # Создаем имя файла с порядковым номером
+        func(array[i], filename)
+
+# beats, tempos, segments_pitches_list, mfccs_list = collect_dataset(basedir=msd_subset_path)
+# save_images(func=plot_tempogram, array=beats, filepath='imgs/tempograms', gramm_name='tempogram')
+# save_images(func=plot_chromagram, array=segments_pitches_list, filepath='imgs/chromagrams', gramm_name='chromagrams')
+# save_images(func=plot_beatgram, array=beats, filepath='imgs/beatgrams', gramm_name='beatgrams')
+# save_images(func=plot_spec, array=mfccs_list, filepath='imgs/specs', gramm_name='specs')
+
+# print('number of songs', apply_to_all_files(basedir=msd_subset_path))
